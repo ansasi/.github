@@ -1,7 +1,5 @@
 # .github
 
-This repository contains reusable GitHub workflows that can be applied across all my repositories.
-
 ## Available Workflows
 
 | Workflow | Description |
