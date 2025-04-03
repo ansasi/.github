@@ -50,7 +50,7 @@
             RENOVATE_INTERNAL_CHECKS_FILTER: strict
             RENOVATE_PLATFORM: github
             RENOVATE_PLATFORM_COMMIT: true
-            RENOVATE_ONBOARDING: false # This will create a PR to add the renovate.json file in all repos that does not have it
+            RENOVATE_ONBOARDING: true # This will create a PR to add the renovate.json file in all repos that does not have it
           with:
             token: ${{ steps.app-token.outputs.token }}
   
