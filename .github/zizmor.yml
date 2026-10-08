@@ -1,0 +1,7 @@
+---
+rules:
+  github-app:
+    ignore:
+      # Renovate autodiscovers every repository, so its token must span the
+      # whole installation rather than a fixed list of repositories.
+      - renovate.yaml
