@@ -14,6 +14,8 @@ Renovate scans every repository owned by `ansasi` for dependencies (npm, pip, Do
 
 ### Setup Instructions
 
+Renovate runs as the GitHub App [`self-hosted-renovate-ansasi`](https://github.com/settings/apps/self-hosted-renovate-ansasi). To set it up again from scratch:
+
 1. Create a GitHub App:
    - Go to [GitHub Developer Settings](https://github.com/settings/apps/new)
    - Follow the instructions at [Creating a GitHub App](https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app/registering-a-github-app)
@@ -29,11 +31,12 @@ Renovate scans every repository owned by `ansasi` for dependencies (npm, pip, Do
      | Pull requests     | Read and write |
      | Workflows         | Read and write |
 
-   - Install the App on all repositories
+   - Install the App on all repositories. When you add permissions later, accept them under
+     [Installed GitHub Apps](https://github.com/settings/installations), or the workflow can't mint its token
 
-2. Configure repository secrets:
-   - Add `RENOVATE_BOT_CLIENT_ID`: The Client ID shown on your GitHub App's settings page (starts with `Iv`)
-   - Add `RENOVATE_BOT_APP_PRIVATE_KEY`: The private key from your GitHub App
+2. Configure the App credentials in this repository:
+   - [Variable](https://github.com/ansasi/.github/settings/variables/actions) `RENOVATE_BOT_CLIENT_ID`: The Client ID shown on the App's settings page (starts with `Iv`). It isn't sensitive, so it's a variable rather than a secret, as [create-github-app-token](https://github.com/actions/create-github-app-token#usage) recommends
+   - [Secret](https://github.com/ansasi/.github/settings/secrets/actions) `RENOVATE_BOT_APP_PRIVATE_KEY`: A private key generated on the App's settings page (the whole `.pem` file)
 
 3. Ensure the workflow file exists:
    - The workflow should be defined at `.github/workflows/renovate.yaml`
