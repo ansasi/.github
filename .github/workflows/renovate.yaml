@@ -5,7 +5,7 @@ run-name: Renovate (${{ (inputs.autodiscoverFilter == '*' && 'all repos') || inp
 
 on:
   schedule:
-    - cron: "20 */6 * * *"
+    - cron: "20 */12 * * *"
   workflow_dispatch:
     inputs:
       dryRun:
