@@ -92,6 +92,14 @@ jobs:
           RENOVATE_ONBOARDING_CONFIG: '{"$schema": "https://docs.renovatebot.com/renovate-schema.json", "extends": ["local>ansasi/renovate-config"]}'
           RENOVATE_REPOSITORY_CACHE: ${{ inputs.repoCache || 'enabled' }}
           RENOVATE_PRESET_CACHE_PERSISTENCE: "true"
+          # Docker Hub login. Without it, Docker Hub's API lists only about 1,000
+          # tags of an image, so images with more (linuxserver/*, traefik,
+          # postgres, searxng...) get no release date and the 7-day wait of the
+          # shared preset can't hold them. docker.io covers the registry,
+          # hub.docker.com the API that returns the dates.
+          RENOVATE_HOST_RULES: >-
+            [{"hostType":"docker","matchHost":"docker.io","username":"${{ secrets.DOCKERHUB_USERNAME }}","password":"${{ secrets.DOCKERHUB_TOKEN }}"},
+            {"hostType":"docker","matchHost":"hub.docker.com","username":"${{ secrets.DOCKERHUB_USERNAME }}","password":"${{ secrets.DOCKERHUB_TOKEN }}"}]
         with:
           token: ${{ steps.app-token.outputs.token }}
 
