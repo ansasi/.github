@@ -10,7 +10,7 @@
 
 ### What it does
 
-Renovate scans every repository owned by `ansasi` for dependencies (npm, pip, Docker, GitHub Actions, etc.) and opens pull requests when updates are available. It runs every 6 hours, can be started manually from the Actions tab, and opens an onboarding pull request in any repository that has no Renovate config yet.
+Renovate scans every repository owned by `ansasi` for dependencies (npm, pip, Docker, GitHub Actions, etc.) and opens pull requests when updates are available. It runs every 6 hours,Renovate scans every repository owned by `ansasi` for dependencies (npm, pip, Docker, GitHub Actions, etc.) and opens pull requests when updates are available. It runs every 12 hours, can be started manually from the Actions tab, and opens an onboarding pull request in any repository that has no Renovate config yet. can be started manually from the Actions tab, and opens an onboarding pull request in any repository that has no Renovate config yet.
 
 ### Setup Instructions
 
@@ -34,6 +34,7 @@ Renovate scans every repository owned by `ansasi` for dependencies (npm, pip, Do
 2. Configure repository secrets:
    - Add `RENOVATE_BOT_CLIENT_ID`: The Client ID shown on your GitHub App's settings page (starts with `Iv`)
    - Add `RENOVATE_BOT_APP_PRIVATE_KEY`: The private key from your GitHub App
+   - Add `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`: a Docker Hub account and a personal access token with *Public Repo Read-only* access. Renovate logs in to the Docker Hub registry with them, which raises its rate limits.
 
 3. Ensure the workflow file exists:
    - The workflow should be defined at `.github/workflows/renovate.yaml`
