@@ -10,7 +10,7 @@
 
 ### What it does
 
-Renovate scans every repository owned by `ansasi` for dependencies (npm, pip, Docker, GitHub Actions, etc.) and opens pull requests when updates are available. It runs every 6 hours,Renovate scans every repository owned by `ansasi` for dependencies (npm, pip, Docker, GitHub Actions, etc.) and opens pull requests when updates are available. It runs every 12 hours, can be started manually from the Actions tab, and opens an onboarding pull request in any repository that has no Renovate config yet. can be started manually from the Actions tab, and opens an onboarding pull request in any repository that has no Renovate config yet.
+Renovate scans every repository owned by `ansasi` for dependencies (npm, pip, Docker, GitHub Actions, etc.) and opens pull requests when updates are available. It runs every 12 hours, can be started manually from the Actions tab, and opens an onboarding pull request in any repository that has no Renovate config yet.
 
 ### Setup Instructions
 

@@ -93,11 +93,11 @@ jobs:
           RENOVATE_REPOSITORY_CACHE: ${{ inputs.repoCache || 'enabled' }}
           RENOVATE_PRESET_CACHE_PERSISTENCE: "true"
           # Docker Hub login for the registry (docker.io): authenticated pulls of
-+          # tags and manifests get Docker Hub's higher rate limits. It doesn't
-+          # give release dates for images with more than about 1,000 tags:
-+          # Docker Hub's API (hub.docker.com) ignores this login and only accepts
-+          # a bearer token that expires after 10 minutes, so the shared preset
-+          # holds those images instead.
+          # tags and manifests get Docker Hub's higher rate limits. It doesn't
+          # give release dates for images with more than about 1,000 tags:
+          # Docker Hub's API (hub.docker.com) ignores this login and only accepts
+          # a bearer token that expires after 10 minutes, so the shared preset
+          # holds those images instead.
           RENOVATE_HOST_RULES: >-
             [{"hostType":"docker","matchHost":"docker.io","username":"${{ secrets.DOCKERHUB_USERNAME }}","password":"${{ secrets.DOCKERHUB_TOKEN }}"}]
         with:
