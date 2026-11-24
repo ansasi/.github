@@ -122,7 +122,7 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           DRY_RUN: ${{ inputs.dryRun == true }}
           # Every one of these, at least one of the "any" ones, none of the blocking ones.
-          REQUIRED_LABELS: undated trusted
+          REQUIRED_LABELS: undated
           ANY_LABELS: type/patch type/minor type/digest
           BLOCKING_LABELS: type/major calver database manual
         run: |

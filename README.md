@@ -56,12 +56,12 @@ The repository cache is saved between runs with `actions/cache`, so Renovate onl
 
 Images on GHCR, Quay and other registries (Helm charts stored as OCI images too) give Renovate no release date, so the shared preset never automerges them: their PRs get the `undated` label. After each Renovate run, the step *Merge undated PRs that waited 7 days* merges such a PR (squash, as Renovate does) when all of these hold:
 
-- it has the labels `undated` and `trusted`, and one of `type/patch`, `type/minor` or `type/digest`;
+- it has the label `undated`, and one of `type/patch`, `type/minor` or `type/digest`;
 - it has none of `type/major` (0.x minors get it too), `calver`, `database` or `manual`;
 - the newest commit on its branch is 7 days old: a newer version pushes a new commit and the wait starts again;
 - every check run and commit status on that commit passed, there is at least one, and GitHub says the PR can be merged.
 
-It looks only at labels, so it names no app. Renovate adds the labels: the shared preset adds `undated`, `type/*`, `calver` and `database`, and each repository decides what is `trusted` or `manual` in its own config ([Undated images](https://github.com/ansasi/renovate-config#undated-images)). A repository that never adds `trusted` keeps merging its undated PRs by hand. In a grouped PR the labels of all its updates add up, so one `manual` or `calver` update keeps the whole PR for review.
+It looks only at labels, so it names no app, and it applies to every repository that extends the shared preset: each app's image comes from the registry its own docs give, so an undated image is trusted wherever it is used. Renovate adds the labels: the shared preset adds `undated`, `type/*`, `calver` and `database`; a repository adds `manual` to its exceptions in its own config ([Merged after 7 days, by label](https://github.com/ansasi/renovate-config#merged-after-7-days-by-label)). In a grouped PR the labels of all its updates add up, so one `manual` or `calver` update keeps the whole PR for review.
 
 The labels to look for are set in the step's environment (`REQUIRED_LABELS`, `ANY_LABELS`, `BLOCKING_LABELS`). With **Dry Run** on, it logs what it would merge without merging. A failure in this step fails the run but doesn't stop Renovate, which runs first.
 
