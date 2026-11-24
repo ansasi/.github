@@ -45,12 +45,20 @@ Run the workflow from the Actions tab with these inputs:
 
 | Input               | Purpose                                                                         |
 | ------------------- | ------------------------------------------------------------------------------- |
-| Dry Run             | Log what Renovate would do without opening branches or pull requests            |
+| Dry Run             | Log what Renovate would do without opening branches or pull requests, and what the 7-day step would set without setting it |
 | Autodiscover Filter | Limit the run to matching repositories, e.g. `homelab` or `docker_*`            |
 | Log Level           | `debug` or `info`                                                               |
 | Repository cache    | `enabled`, `disabled`, or `reset` to discard the cache and rebuild it from zero |
 
 The repository cache is saved between runs with `actions/cache`, so Renovate only re-extracts dependencies from repositories that changed.
+
+### The 7-day wait for undated PRs
+
+Images on GHCR, Quay and other registries (Helm charts stored as OCI images too) give Renovate no release date, so their PRs carry the `undated` label and the 7-day wait is counted from the PR instead. Before each Renovate run, the step *Set the 7-day status on undated PRs* sets a commit status, `undated-age`, on every open `undated` PR in every repository: `pending` until the newest commit on the PR's branch is 7 days old, then `success`.
+
+Renovate's own rules still decide whether a PR may be automerged at all: majors, 0.x minors, date versions, most database minors and any repository rule with `automerge: false` stay PRs for review. For the rest, Renovate merges only when every check is green, so they wait those 7 days ([Undated images](https://github.com/ansasi/renovate-config#undated-images)). On the PRs left for review, the status says when their week is up.
+
+If the step fails, the job stops before Renovate runs, so no PR is merged without the status. The step uses the same app token as Renovate (*Commit statuses: write*).
 
 ### Configuration
 
