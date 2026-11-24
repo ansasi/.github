@@ -45,12 +45,18 @@ Run the workflow from the Actions tab with these inputs:
 
 | Input               | Purpose                                                                         |
 | ------------------- | ------------------------------------------------------------------------------- |
-| Dry Run             | Log what Renovate would do without opening branches or pull requests            |
+| Dry Run             | Log what Renovate would do without opening branches or pull requests, and what the 7-day step would set without setting it |
 | Autodiscover Filter | Limit the run to matching repositories, e.g. `homelab` or `docker_*`            |
 | Log Level           | `debug` or `info`                                                               |
 | Repository cache    | `enabled`, `disabled`, or `reset` to discard the cache and rebuild it from zero |
 
 The repository cache is saved between runs with `actions/cache`, so Renovate only re-extracts dependencies from repositories that changed.
+
+### The 7-day wait for undated PRs
+
+Images on GHCR, Quay and other registries (Helm charts stored as OCI images too) give Renovate no release date, so their PRs carry the `undated` label. Before each Renovate run, the step *Set the 7-day status on undated PRs* sets a commit status, `undated-age`, on every open `undated` PR in every repository: `pending` until the newest commit on the PR's branch is 7 days old, then `success`. The shared preset automerges the ones from trusted publishers with plain versions, and Renovate merges only when every check is green, so they wait those 7 days ([Trusted publishers](https://github.com/ansasi/renovate-config#trusted-publishers)). The other `undated` PRs are still merged by hand; the status says when their week is up.
+
+If the step fails, the job stops before Renovate runs, so no PR is merged without the status. The step uses the same app token as Renovate (*Commit statuses: write*).
 
 ### Configuration
 
