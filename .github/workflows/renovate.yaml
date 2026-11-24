@@ -62,6 +62,52 @@ jobs:
           permission-vulnerability-alerts: read
           permission-workflows: write
 
+      # Undated images (GHCR, Quay, OCI charts) carry no release date, so the
+      # shared preset counts the 7-day wait from the PR: this sets the
+      # undated-age status on every open `undated` PR, pending until the newest
+      # commit on its branch is 7 days old. Renovate's own rules still decide
+      # whether a PR may be automerged at all (majors, dates, databases...);
+      # this only holds the ones that may. Renovate merges only when every check
+      # is green, so this must run first: if it fails, the job stops before
+      # Renovate. Not prefixed renovate/: Renovate ignores its own successful
+      # renovate/ statuses.
+      - name: Set the 7-day status on undated PRs
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          DRY_RUN: ${{ inputs.dryRun == true }}
+        run: |
+          set -euo pipefail
+          now=$(date -u +%s)
+          wait=$((7 * 24 * 3600))
+          repos=$(gh api --paginate /installation/repositories \
+            --jq '.repositories[] | select(.archived | not) | .full_name')
+          for repo in $repos; do
+            prs=$(gh api --paginate "repos/$repo/pulls?state=open&per_page=100" \
+              --jq '.[] | select(.head.ref | startswith("renovate/"))
+                | select(any(.labels[]; .name == "undated"))
+                | "\(.number) \(.head.sha)"')
+            while read -r number sha; do
+              [ -n "$number" ] || continue
+              committed=$(gh api "repos/$repo/commits/$sha" --jq '.commit.committer.date')
+              ready=$(( $(date -u -d "$committed" +%s) + wait ))
+              if [ "$ready" -le "$now" ]; then
+                state=success
+                description="7 days since the last commit ($committed)"
+              else
+                state=pending
+                description="Waits until $(date -u -d "@$ready" +'%Y-%m-%d %H:%M') UTC, 7 days after the last commit"
+              fi
+              current=$(gh api "repos/$repo/commits/$sha/status" \
+                --jq '[.statuses[] | select(.context == "undated-age") | .state][0] // ""')
+              echo "$repo#$number ${sha:0:7}: $state (was ${current:-none})"
+              if [ "$current" = "$state" ] || [ "$DRY_RUN" = "true" ]; then
+                continue
+              fi
+              gh api -X POST "repos/$repo/statuses/$sha" --silent \
+                -f state="$state" -f context=undated-age -f description="$description"
+            done <<< "$prs"
+          done
+
       - name: Restore Renovate repository cache
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -109,77 +155,3 @@ jobs:
         with:
           path: /tmp/renovate/cache/renovate/repository
           key: renovate-repository-cache-${{ github.run_id }}-${{ github.run_attempt }}
-
-      # Undated images (GHCR, Quay, OCI charts) carry no release date, so
-      # Renovate's 7-day wait can't hold them and the shared preset never
-      # automerges them. This merges those PRs by their labels alone, once the
-      # newest commit on the branch is 7 days old and every check is green.
-      # Which labels mean what: ansasi/renovate-config, "Undated images".
-      # After Renovate, so a branch it just pushed is never 7 days old.
-      - name: Merge undated PRs that waited 7 days
-        if: ${{ !cancelled() }}
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          DRY_RUN: ${{ inputs.dryRun == true }}
-          # Every one of these, at least one of the "any" ones, none of the blocking ones.
-          REQUIRED_LABELS: undated
-          ANY_LABELS: type/patch type/minor type/digest
-          BLOCKING_LABELS: type/major calver database manual
-        run: |
-          set -euo pipefail
-          now=$(date -u +%s)
-          wait=$((7 * 24 * 3600))
-          to_json() { printf '%s\n' "$@" | jq -R . | jq -sc .; }
-          # shellcheck disable=SC2086 # the label lists are split on purpose
-          filter=$(jq -nc --argjson req "$(to_json $REQUIRED_LABELS)" \
-            --argjson any "$(to_json $ANY_LABELS)" --argjson block "$(to_json $BLOCKING_LABELS)" \
-            '{req: $req, any: $any, block: $block}')
-          repos=$(gh api --paginate /installation/repositories \
-            --jq '.repositories[] | select(.archived | not) | .full_name')
-          for repo in $repos; do
-            prs=$(gh api --paginate "repos/$repo/pulls?state=open&per_page=100" |
-              jq -r --argjson f "$filter" '.[]
-                | select(.head.ref | startswith("renovate/")) | select(.draft | not)
-                | [.labels[].name] as $l
-                | select(all($f.req[]; IN($l[])) and any($f.any[]; IN($l[]))
-                    and (any($f.block[]; IN($l[])) | not))
-                | "\(.number) \(.head.sha)"')
-            while read -r number sha; do
-              [ -n "$number" ] || continue
-              pr="$repo#$number ${sha:0:7}"
-              committed=$(gh api "repos/$repo/commits/$sha" --jq '.commit.committer.date')
-              ready=$(( $(date -u -d "$committed" +%s) + wait ))
-              if [ "$ready" -gt "$now" ]; then
-                echo "$pr: waits until $(date -u -d "@$ready" +'%Y-%m-%d %H:%M') UTC"
-                continue
-              fi
-              # Every check run finished and passed, every commit status
-              # succeeded, and at least one of them exists.
-              runs=$(gh api --paginate "repos/$repo/commits/$sha/check-runs?per_page=100" \
-                --jq '.check_runs[] | "\(.status) \(.conclusion)"')
-              statuses=$(gh api "repos/$repo/commits/$sha/status" --jq '"\(.state) \(.total_count)"')
-              if [ -z "$runs" ] && [ "${statuses#* }" = "0" ]; then
-                echo "$pr: no checks, left for review"
-                continue
-              fi
-              if [ -n "$runs" ] && grep -qvE '^completed (success|neutral|skipped)$' <<< "$runs"; then
-                echo "$pr: check runs not green"
-                continue
-              fi
-              if [ "${statuses#* }" != "0" ] && [ "${statuses% *}" != "success" ]; then
-                echo "$pr: commit statuses not green (${statuses% *})"
-                continue
-              fi
-              mergeable=$(gh api "repos/$repo/pulls/$number" --jq '.mergeable')
-              if [ "$mergeable" != "true" ]; then
-                echo "$pr: not mergeable yet ($mergeable)"
-                continue
-              fi
-              echo "$pr: merging"
-              if [ "$DRY_RUN" = "true" ]; then
-                continue
-              fi
-              # --match-head-commit: never merge a commit that wasn't checked.
-              gh pr merge "$number" --repo "$repo" --squash --match-head-commit "$sha"
-            done <<< "$prs"
-          done
